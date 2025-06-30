@@ -18,6 +18,32 @@ npm install
 npm run dev
 ```
 
+## Environment Variables
+
+Create `.env` file in the `backend` directory:
+
+```env
+# Together AI Configuration
+TOGETHER_API_KEY=your_together_ai_api_key_here
+
+# Server Configuration (optional)
+HOST=0.0.0.0
+PORT=8000
+DEBUG=false
+
+# File System Configuration (optional)
+WORKSPACES_DIR=workspaces
+MAX_FILE_SIZE=104857600
+MAX_WORKSPACE_SIZE=1073741824
+MAX_FILES_PER_WORKSPACE=1000
+
+# LLM Configuration (optional)
+LLM_MODEL=meta-llama/Llama-3.3-70B-Instruct-Turbo-Free
+LLM_TEMPERATURE=0.7
+LLM_MAX_TOKENS=512
+LLM_TIMEOUT=30
+```
+
 ## Usage
 
 1. **Create a workspace** via frontend or API
@@ -46,12 +72,5 @@ npm run dev
 - `GET /workspace/` - List all workspaces  
 - `POST /prompt/process` - Process natural language prompt
 - `GET /health` - Health check
-
-## Environment
-
-Create `.env` in backend directory:
-```
-TOGETHER_API_KEY=your_together_ai_key
-```
 
 Visit `http://localhost:5173` to use the frontend. 
