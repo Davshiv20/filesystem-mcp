@@ -1,4 +1,19 @@
-const API_BASE_URL = 'http://localhost:8000';
+// Dynamically get API base URL from window location
+const getApiBaseUrl = (): string => {
+  // In development, use localhost:8000
+  if (import.meta.env.DEV) {
+    return 'http://localhost:8000';
+  }
+  
+  // In production, use the same host as the frontend but different port
+  const protocol = window.location.protocol;
+  const hostname = window.location.hostname;
+  const port = '8000'; // Backend port
+  
+  return `${protocol}//${hostname}:${port}`;
+};
+
+const API_BASE_URL = getApiBaseUrl();
 
 export interface PromptRequest {
   workspace_id: string;
@@ -12,6 +27,8 @@ export interface PromptResponse {
   confidence: number;
   reasoning: string;
   method: string;
+  file_path: string;
+  success_message: string;
 }
 
 export interface WorkspaceInfo {
