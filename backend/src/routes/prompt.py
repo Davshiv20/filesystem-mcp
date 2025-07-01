@@ -75,11 +75,41 @@ async def process_prompt(
                         errors.append(f"Failed to edit file: {target}")
                 
                 elif op_type == "delete":
-                    op_result = await file_system_service.delete_file(request.workspace_id, target)
-                    if op_result["success"]:
-                        executed_operations.append(f"Deleted file: {target}")
+                    # Handle wildcard delete (delete all files in workspace)
+                    if target == "*" or target == "all" or "all files" in target.lower():
+                        # Delete all files in the workspace
+                        workspace_path = file_system_service.get_workspace_path(request.workspace_id)
+                        deleted_count = 0
+                        errors_count = 0
+                        
+                        try:
+                            # List all files in workspace
+                            files_result = await file_system_service.list_files(request.workspace_id)
+                            if files_result["success"]:
+                                for file_info in files_result["files"]:
+                                    if not file_info["is_directory"]:  # Only delete files, not directories
+                                        op_result = await file_system_service.delete_file(request.workspace_id, file_info["path"])
+                                        if op_result["success"]:
+                                            deleted_count += 1
+                                        else:
+                                            errors_count += 1
+                                
+                                if deleted_count > 0:
+                                    executed_operations.append(f"Deleted {deleted_count} files from workspace")
+                                if errors_count > 0:
+                                    errors.append(f"Failed to delete {errors_count} files")
+                            else:
+                                errors.append("Failed to list files for deletion")
+                        except Exception as e:
+                            logger.error(f"Error deleting all files: {str(e)}")
+                            errors.append(f"Error deleting all files: {str(e)}")
                     else:
-                        errors.append(f"Failed to delete file: {target}")
+                        # Delete specific file
+                        op_result = await file_system_service.delete_file(request.workspace_id, target)
+                        if op_result["success"]:
+                            executed_operations.append(f"Deleted file: {target}")
+                        else:
+                            errors.append(f"Failed to delete file: {target}")
                 
                 elif op_type == "rename":
                     new_name = operation.get("new_name")
@@ -110,15 +140,34 @@ async def process_prompt(
         file_path = created_files[0] if created_files else ""
         success_message = ""
         
-        if len(errors) == 0 and created_files:
-            if len(created_files) == 1:
-                success_message = f"✅ Successfully created file: {created_files[0]}"
+        # Count different types of operations
+        create_count = len([op for op in executed_operations if "Created" in op])
+        edit_count = len([op for op in executed_operations if "Edited" in op])
+        delete_count = len([op for op in executed_operations if "Deleted" in op])
+        rename_count = len([op for op in executed_operations if "Renamed" in op])
+        list_count = len([op for op in executed_operations if "Listed" in op])
+        
+        if len(errors) == 0:
+            if create_count > 0:
+                if create_count == 1:
+                    success_message = f"✅ Successfully created file: {file_path}"
+                else:
+                    success_message = f"✅ Successfully created {create_count} files"
+            elif edit_count > 0:
+                success_message = f"✅ Successfully edited {edit_count} file(s)"
+            elif delete_count > 0:
+                success_message = f"✅ Successfully deleted {delete_count} file(s)"
+            elif rename_count > 0:
+                success_message = f"✅ Successfully renamed {rename_count} file(s)"
+            elif list_count > 0:
+                success_message = "✅ Files listed successfully"
             else:
-                success_message = f"✅ Successfully created {len(created_files)} files"
-        elif len(errors) == 0:
-            success_message = "✅ Operation completed successfully"
+                success_message = "✅ Operation completed successfully"
         else:
-            success_message = f"⚠️ Operation completed with {len(errors)} errors"
+            if create_count > 0 or edit_count > 0 or delete_count > 0 or rename_count > 0:
+                success_message = f"⚠️ Operation partially completed with {len(errors)} errors"
+            else:
+                success_message = f"❌ Operation failed with {len(errors)} errors"
         
         response_data = {
             "success": len(errors) == 0,
