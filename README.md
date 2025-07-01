@@ -74,3 +74,8 @@ LLM_TIMEOUT=30
 - `GET /health` - Health check
 
 Visit `http://localhost:5173` to use the frontend. 
+
+
+Current Limitation: The backend stores Workspace ID inmemory and we're not using a DB for the same, hence you might encounter a 404 while /process requests as it's unable to maintain a workspace ID inmemory.
+
+A solution would be to store the IDs and similar data in DB which is currently being implemented.
